@@ -1,11 +1,29 @@
-import { OpenAI } from "langchain/llms/openai";
+import { ChatOpenAI } from "langchain/chat_models/openai";
+import { initializeAgentExecutorWithOptions } from "langchain/agents";
+import {
+  RequestsGetTool,
+  RequestsPostTool,
+  AIPluginTool,
+} from "langchain/tools";
 
 export const run = async () => {
-  // temperature controls how random/creative the response is. It ranges from 0(deterministic) to 1(max creativity)
-  const model = new OpenAI({ temperature: 0.9, verbose: true,  });
-  console.log(model);
-  const res = await model.call(
-    "What would be a good company name a company that makes colorful socks?"
+  const tools = [
+    new RequestsGetTool(),
+    new RequestsPostTool(),
+    await AIPluginTool.fromPluginUrl(
+      "https://www.klarna.com/.well-known/ai-plugin.json"
+    ),
+  ];
+  const agent = await initializeAgentExecutorWithOptions(
+    tools,
+    new ChatOpenAI({ temperature: 0 }),
+    { agentType: "chat-zero-shot-react-description"}
   );
-  console.log(res);
+
+  const result = await agent.call({
+    input: "what t shirts are available in klarna?",
+  });
+
+  
+  console.log({ result });
 };
